@@ -149,13 +149,13 @@ Biojs.Sequence = Biojs.extend(
 		target : "",
 		format : "FASTA",
 		selection: { start: 0, end: 0 },
-		columns: { size: 35, spacedEach: 10 },
+		columns: { size: 40, spacedEach: 10 },
 		highlights : [],
 		annotations: [],
 		sequenceUrl: 'http://www.ebi.ac.uk/das-srv/uniprot/das/uniprot/sequence',
 		
 		// Styles 
-		selectionColor : 'Yellow',
+		selectionColor : '#BDD3FF',
 		selectionFontColor : 'black',
 		highlightFontColor : 'red',
 		highlightBackgroundColor : 'white',
@@ -284,6 +284,7 @@ Biojs.Sequence = Biojs.extend(
 	        .appendTo("body")
 	        .hide();
 
+
 		if ( ! Biojs.Utils.isEmpty(this.opt.sequence) ) {
 			this._redraw();
 			
@@ -371,6 +372,10 @@ Biojs.Sequence = Biojs.extend(
 		this._highlightsCount = 0;
 		this.opt.selection = { start: 0, end: 0 };
 		this._annotations = [];
+
+		// DIV for the format selector
+		this._buildFormatSelector();
+
 		this._contentDiv.children().remove();
 		
 		this._headerDiv.hide();
@@ -399,7 +404,7 @@ Biojs.Sequence = Biojs.extend(
     * @param {int} start The starting character of the selection.
     * @param {int} end The ending character of the selection
     */
-	setSelection : function(start, end) {
+	setSelection2 : function(start, end) {
 		if(start > end) {
 			var aux = end;
 			end = start;
@@ -419,13 +424,12 @@ Biojs.Sequence = Biojs.extend(
 	_buildFormatSelector: function () {
 		var self = this;
 		
-		this._headerDiv = jQuery('<div></div>').appendTo(this._container);
+		this._headerDiv = jQuery('<div class="headerSelect"></div>').appendTo(this._container);
 		this._headerDiv.css({
-			'font-family': '"Heveltica Neue", Arial, "sans serif"',
-			'font-size': '14px'	
-		}).append('Format: ');
-		
-		this._formatSelector = jQuery('<select> '+
+		}).append('Select format:     ');
+
+
+		this._formatSelector = jQuery('<select class="formatSelect"> '+
 				'<option value="FASTA">FASTA</option>'+
 				'<option value="CODATA">CODATA</option>'+
 				'<option value="PRIDE">PRIDE</option>'+
@@ -515,11 +519,38 @@ Biojs.Sequence = Biojs.extend(
 					"color": highlight.color,
 					"background-color": highlight.background,
 					"z-index": z,
-					"opacity": o
+					"opacity": 1
 					})
 				.addClass("highlighted");
 		}
+
+	    if(this.opt.format == 'SVG'){
+		var svgNS2 = this.opt.svg.namespaceURI;
+		var svgElement;
+		var x_coord;
+		var y_coord;
+		var rect;
+		var id;
+
+		for(var n = highlight.start; n <=highlight.end; n++) {
+		    id = '0_'+n;
+		    svgElement = document.getElementById(id);
+		    console.log(svgElement);
+		    x_coord = svgElement.getAttribute('x');
+		    y_coord = svgElement.getAttribute('y') - 13;
+		    rect = document.createElementNS(svgNS2,'rect');
+		    rect.setAttribute('x',x_coord);
+		    rect.setAttribute('y',y_coord);
+		    rect.setAttribute('width',17);
+		    rect.setAttribute('height',17);
+		    rect.setAttribute('fill',highlight.background);
+		    this.opt.svg.appendChild(rect);
+		}
+		this.opt.svg.appendChild(this.opt.text);
+		document.getElementById("test_mk1").appendChild(this.opt.svg);
+	    }
 	},
+
 	/* 
      * Function: Biojs.Sequence._applyHighlights
      * Purpose:  Apply the specified highlights.
@@ -531,6 +562,7 @@ Biojs.Sequence = Biojs.extend(
 			this._applyHighlight(highlights[i]);
 		}
 	},
+
 	/* 
      * Function: Biojs.Sequence._restoreHighlights
      * Purpose:  Repaint the highlights in the specified region.
@@ -781,8 +813,7 @@ Biojs.Sequence = Biojs.extend(
 				"color": this.opt.selectionFontColor, 
 				"background": this.opt.selectionColor 
 			});
-		}
-		
+		}		
 	},
 	
 	/* 
@@ -819,7 +850,7 @@ Biojs.Sequence = Biojs.extend(
 			this._drawCodata();
 		} else if (this.opt.format == 'FASTA'){
 			this._drawFasta();
-		} else {
+		} else if (this.opt.format == 'PRIDE'){
 			this.opt.format = 'PRIDE';
 			this._drawPride();
 		}
@@ -827,8 +858,201 @@ Biojs.Sequence = Biojs.extend(
 		// Restore the highlighted regions
 		this._applyHighlights(this._highlights);
 		this._repaintSelection();
-		this._addSpanEvents();
+		//this._addSpanEvents();
 	},
+
+	/* 
+     * Function: Biojs.Sequence._drawSVG
+     * Purpose:  Repaint the current sequence using FASTA format.  
+     * Returns:  -
+     * Inputs: -
+     */
+	_drawSVG : function() {
+		var self = this;
+		var a = this.opt.sequence.toUpperCase().split('');		
+	        this.opt.format = 'SVG';
+	        var x = 0;
+	        var y = 50;
+	        var lineHeight = 17;
+                var fontsize = '14px';
+                var fonttype = 'courier';
+                var fontcolor = '#000000';
+	        var maxWidth =  this.opt.columns.size * 2;
+	        var header_increment = 5;
+	        var lineheight = 17;
+	        var maxheight = (this.opt.sequence.length/this.opt.columns.size) * (lineheight+2);
+	        this.opt.maxheight = maxheight;
+
+                var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+	        var svgNS = svg.namespaceURI;
+	        svg.setAttribute('width',850);
+	        svg.setAttribute('height',maxheight);
+	        svg.setAttribute('id','svgseq');
+	        var text = document.createElementNS(svgNS, 'text');
+	        text.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space","preserve");
+	        text.setAttribute('fill', fontcolor);
+	        text.setAttribute('font-size',fontsize);
+	        text.setAttribute('font-family',fonttype);
+	        text.setAttribute('x', x);
+	        text.setAttribute('y', y);
+
+	        var i = 1;
+		var arr = [];
+		var identifier = this.opt.id + ' ' + a.length;
+
+		/* Correct column size in case the sequence is a small peptide */
+		var numCols = this.opt.columns.size;
+		if ( this.opt.sequence.length < this.opt.columns.size ) {
+			numCols = this.opt.sequence.length;	
+		}
+
+	       var opt = {
+		        maxWidth: maxWidth,
+		        lineheight: lineheight,
+		        x: x,
+		        y: y,
+		        numLeft: true,
+		        numTop: true,
+			numLeftSize: 7,
+			numLeftPad:' ',
+			numTopEach: 5,
+			numCols: numCols,
+			numColsForSpace: 0,
+			spaceBetweenChars: true
+		};
+
+		svg = this._drawSVGSequence(a, opt, svg, text);
+	        this.opt.svg = svg;
+	        document.getElementById('test_mk1').appendChild(svg);
+	    
+	    
+	        // Restore the highlighted regions
+	        this._applyHighlights(this._highlights);
+
+	       //Prepare for download
+	       var svgString = new XMLSerializer().serializeToString(document.querySelector('svg'));
+
+	       return svgString;
+	},
+
+     /* 
+     * Function: Biojs.Sequence._drawSequence
+     * Purpose:  Repaint the current sequence using CUSTOM format.  
+     * Returns:  -
+     * Inputs:   a -> {char[]} a The sequence strand.
+     * 			 opt -> {Object} opt The CUSTOM format.
+     */
+	_drawSVGSequence : function(a, opt, svg, text) {
+		var str = '';
+		var svgNS = svg.namespaceURI;
+	        var y = opt.y-opt.lineheight;
+	        var x = opt.x;
+
+	        // Index at top?
+		if( opt.numTop )
+		{
+
+                    var tspan = document.createElementNS(svgNS, "tspan"); 
+                    tspan.setAttribute("fill","#000000");
+                    tspan.setAttribute('x',opt.x-25);
+                    tspan.setAttribute('y',y);
+                    var headerString = '';
+
+		    var size = (opt.spaceBetweenChars)? opt.numTopEach*2: opt.numTopEach;
+			
+			if (opt.numLeft) {
+				headerString += this._formatIndexSVG(' ', opt.numLeftSize+3, ' ');
+			}
+			
+			headerString += this._formatIndexSVG(' ', size+1, ' ');
+			
+			for(var xy = opt.numTopEach; xy < opt.numCols; xy += opt.numTopEach) {
+				headerString += this._formatIndexSVG(xy, size, ' ', true);
+			}
+
+		    var myText = document.createTextNode(' '+headerString); 
+                    tspan.appendChild(myText);
+                    text.appendChild(tspan);
+		}	
+
+		var j=1;
+	        var line = '';
+	        var prefix = 1;
+	        var k = 1;
+
+		for (var i=1; i <= a.length; i++) {
+
+			if( i % opt.numCols == 1) {
+
+			// Index at the left?
+			if (opt.numLeft) {
+			    var buffer = this._formatIndexSVG(k, opt.numLeftSize, opt.numLeftPad);
+			    buffer += '  ';
+			    k += opt.numCols;
+			    x = opt.x + 10;
+			    y += opt.lineheight;
+			    var tspan = document.createElementNS(svgNS, "tspan");
+			    tspan.setAttribute("fill","#000000");
+			    tspan.setAttribute('x',x);
+			    tspan.setAttribute('y',y);
+			    tspan.setAttribute('id','numLeft_'+k);
+			    tspan.setAttribute('class','sequence');
+			    var myText = document.createTextNode(buffer); 
+			    tspan.appendChild(myText);
+			    text.appendChild(tspan);
+			    svg.appendChild(text);
+			}
+
+			    
+			    x += 80;
+			    var tspan = document.createElementNS(svgNS, "tspan");
+			    tspan.setAttribute("fill","#000000");
+			    tspan.setAttribute('x',x);
+			    tspan.setAttribute('y',y);
+			    tspan.setAttribute('id','0_'+i);
+			    tspan.setAttribute('class','sequence');
+			    var seqline = a[i-1];
+			    var myText = document.createTextNode(seqline); 
+			    tspan.appendChild(myText);
+			    text.appendChild(tspan);
+			    svg.appendChild(text);
+				
+			    j = 1;
+				
+			} else {
+
+			    x += 17;
+			    var tspan = document.createElementNS(svgNS, "tspan");
+			    tspan.setAttribute("fill","#000000");
+			    tspan.setAttribute('x',x);
+			    tspan.setAttribute('y',y);
+			    tspan.setAttribute('id','0_'+i);
+			    tspan.setAttribute('class','sequence');
+			    var seqline = a[i-1];
+			    seqline += ( j % opt.numColsForSpace == 0)? ' ' : '';
+			    seqline += (opt.spaceBetweenChars)? ' ' : '';
+			    var myText = document.createTextNode(seqline); 
+			    tspan.appendChild(myText);
+			    text.appendChild(tspan);
+			    svg.appendChild(text);			    
+
+			    j++;
+			}
+		}
+	        this.opt.text = text;
+		svg.appendChild(text);
+	        return svg;
+	},
+
+	/* 
+     * Function: Biojs.Sequence._drawFasta
+     * Purpose:  Repaint the current sequence using FASTA format.  
+     * Returns:  -
+     * Inputs: -
+     */
+    _getmaxheight: function() {
+	return this.opt.maxheight
+    },
 	/* 
      * Function: Biojs.Sequence._drawFasta
      * Purpose:  Repaint the current sequence using FASTA format.  
@@ -838,10 +1062,11 @@ Biojs.Sequence = Biojs.extend(
 	_drawFasta : function() {
 		var self = this;
 		var a = this.opt.sequence.toUpperCase().split('');
-		var pre = jQuery('<pre></pre>').appendTo(this._contentDiv);
+		var pre = jQuery('<pre class="sequence_box"></pre>').appendTo(this._contentDiv);
 
 		var i = 1;
 		var arr = [];
+
 	    var str = '>' + this.opt.id + ' ' + a.length + ' bp<br/>';
 		
 		/* Correct column size in case the sequence is as small peptide */
@@ -856,6 +1081,7 @@ Biojs.Sequence = Biojs.extend(
 		};
 
 		str += this._drawSequence(a, opt);
+
 		pre.html(str);
 		
 		this._drawAnnotations(opt);
@@ -870,11 +1096,13 @@ Biojs.Sequence = Biojs.extend(
 		
 		var self = this;
 		var a = this.opt.sequence.toUpperCase().split('');
-		var pre = jQuery('<pre style="white-space:pre"></pre>').appendTo(this._contentDiv);
+		/*var pre = jQuery('<pre style="white-space:pre"></pre>').appendTo(this._contentDiv);*/
+	        var pre = jQuery('<pre class="sequence_box"></pre>').appendTo(this._contentDiv);
 
 		var i = 0;
-		var str = 'ENTRY           ' + this.opt.id + '<br/>';
-		str += 'SEQUENCE<br/>';
+		/*var str = 'ENTRY           ' + this.opt.id + '<br/>';
+		str += 'SEQUENCE<br/>';*/
+	        var str = '';
 		if ( this.opt.formatOptions !== undefined ){
 			if(this.opt.formatOptions.title !== undefined ){
 				if (this.opt.formatOptions.title == false) {
@@ -902,15 +1130,6 @@ Biojs.Sequence = Biojs.extend(
 		
 		str += this._drawSequence(a, opt);
 		
-		var footer = '<br/>///';
-		if (this.opt.formatOptions !== undefined) {
-			if (this.opt.formatOptions.footer !== undefined) {
-				if (this.opt.formatOptions.footer == false) {
-					footer = '';
-				}
-			}
-		}
-		str += footer;
 		pre.html(str);
 		
 		this._drawAnnotations(opt);
@@ -1064,10 +1283,11 @@ Biojs.Sequence = Biojs.extend(
 		var a = this.opt.sequence.toLowerCase().split('');
 		var i = 0;
 		var arr = [];
-		var pre = jQuery('<pre></pre>').appendTo(this._contentDiv);
+		var pre = jQuery('<pre class="sequence_box" id="sequence_box"></pre>').appendTo(this._contentDiv);
 		
 		/* Correct column size in case the sequence is as small peptide */
 		var numCols = this.opt.columns.size;
+
 		if ( this.opt.sequence.length < this.opt.columns.size ) {
 			numCols = this.opt.sequence.length;	
 		}
@@ -1076,10 +1296,13 @@ Biojs.Sequence = Biojs.extend(
 			numCols: numCols
 		};
 		
+
 		pre.html(
 			this._drawSequence(a, opt)
 		);
 		
+
+
 		this._drawAnnotations(opt);
 	},
 	/* 
@@ -1091,7 +1314,7 @@ Biojs.Sequence = Biojs.extend(
 	_drawPride : function() {
 		var self = this;
 		var a = this.opt.sequence.toUpperCase().split('');
-		var pre = jQuery('<pre></pre>').appendTo(this._contentDiv);
+		var pre = jQuery('<pre class="sequence_box" id="sequence_box"></pre>').appendTo(this._contentDiv);
 		
 		/* Correct column size in case the sequence is as small peptide */
 		var numCols = this.opt.columns.size;
@@ -1188,14 +1411,25 @@ Biojs.Sequence = Biojs.extend(
 		}
 		
 		str += '<br/>'	
+
+		var footer = '<br/>Powered by BioJS';
+		if (this.opt.formatOptions !== undefined) {
+			if (this.opt.formatOptions.footer !== undefined) {
+				if (this.opt.formatOptions.footer == false) {
+					footer = '';
+				}
+			}
+		}
+		str += footer;
 			
 		if (jQuery.browser.msie) {
 			str = "<pre>" + str + "</pre>";
 		}	
-			
+
+
 		return str;
 	},
-	/* 
+    /* 
      * Function: Biojs.Sequence._formatIndex
      * Purpose:  Build the HTML corresponding to counting numbers (top, left, right) in the strand.
      * Returns:  -
@@ -1220,6 +1454,33 @@ Biojs.Sequence = Biojs.extend(
 		}
 		return str;
 	},
+
+    /* 
+     * Function: Biojs.Sequence._formatIndex
+     * Purpose:  Build the HTML corresponding to counting numbers (top, left, right) in the strand.
+     * Returns:  -
+     * Inputs:   number -> {int} The number 
+     * 			 size -> {int} Number of bins to suit the number.
+     * 			 fillingChar -> {char} Character to be used for filling out blank bins.
+     * 			 alignLeft -> {bool} Tell if aligned to the left.
+     */
+	_formatIndexSVG : function( number, size, fillingChar, alignLeft) {
+		var str = number.toString();
+		var filling = '';
+		var padding = size - str.length;	
+		if ( padding > 0 ) {
+			while ( padding-- > 0 ) {
+				filling += fillingChar;
+			}
+			if (alignLeft){
+				str = number+filling;
+			} else {
+				str = filling+number;
+			}
+		}
+		return str;
+	},
+
 	/* 
      * Function: Biojs.Sequence._addSpanEvents
      * Purpose:  Add the event handlers to the strand.
