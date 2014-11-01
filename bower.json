@@ -1,0 +1,26 @@
+{
+  "name": "biojs1",
+  "version": "1.0.0",
+  "homepage": "https://www.ebi.ac.uk/Tools/biojs/registry",
+  "authors": "",
+  "description": "core for the bio-js family of biological visualizations, with legacy support for biojs 1 components",
+  "main": [
+      "./src/main/javascript/Biojs.js",
+      "./src/main/javascript/Biojs.Table.js",
+      "./src/main/javascript/Biojs.InteractionsTable.js",
+      "./src/main/resources/css/biojs.table.css"
+  ]
+  "keywords": [
+    "biojs",
+    "biology"
+  ],
+  "license": "Apache License 2.0",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
