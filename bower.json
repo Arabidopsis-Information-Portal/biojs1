@@ -9,7 +9,7 @@
       "./src/main/javascript/Biojs.Table.js",
       "./src/main/javascript/Biojs.InteractionsTable.js",
       "./src/main/resources/css/biojs.table.css"
-  ]
+  ],
   "keywords": [
     "biojs",
     "biology"
